@@ -1,0 +1,43 @@
+{
+    "path": "data",
+    "traffic": {
+        "type": "RandomTokenPair",
+        "init_kwargs": {
+            "tokens": ["BTC", "ETH", "USDT", "AVAX", "UNI"],
+            "sigma": 10,
+            "batches": 2000,
+            "batch_size": 5
+        }
+    },
+    "oracle": {
+        "type": "MultiTokenPriceOracle",
+        "init_kwargs": {
+            "prices": {
+                "BTC": 23004,
+                "ETH": 1689,
+		    "AVAX": 26.5,
+                "USDT": 1,
+		    "UNI": 8.85
+            },
+		"stdv": 0.02,
+		"change_probability": 0.95
+        }
+    },
+    "market_maker": {
+        "type": "MPMM",
+        "init_kwargs": {
+            "tokens": ["BTC", "ETH", "USDT", "UNI", "AVAX"],
+		"token_info": [[27264, 0.1525], [23272, 0.3825], [23982, 0.545], [20930, 0.51], [29283, 0.56]],
+		"reset_batch": "False",
+		"reset_tx": "False",
+		"arb": "True"
+        },
+        "arb_kwargs": {
+		"arb_period": 3,
+		"arb_actions": 10
+	  }
+    },
+    "visualization": {
+        "plot_slippage_by_1st_tx": {}
+    }
+}
