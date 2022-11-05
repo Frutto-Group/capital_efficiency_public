@@ -1,14 +1,20 @@
-import numpy as np
+from typing import str, float, bool
 
 class InputTx:
-    def __init__(self, index : int, input_token_type : str, output_token_type : str, input_token_value : float) -> None:
-        self.index = index
+    def __init__(self, input_token_type : str, output_token_type : str, input_token_value : float, is_arb : bool = False):
+        """
+        Represents one transaction to in traffic
+
+        Parameters:
+        input_token_type: input token name
+        output_token_type: output token name
+        input_token_value: amount of input token to be inserted in market maker's liquidity pool
+        is_arb: whether or not this transaction is processed or will result in call to arbitrage() in market maker
+        """
         self.input_token_type  = input_token_type
         self.output_token_type = output_token_type
         self.input_token_value = input_token_value
-
-    def show(self) -> None:
-        print(f'Transaction #{self.index:>7d}: Input {self.input_token_type} w/ amount {self.input_token_value:12.6f}, Outputting {self.output_token_type}')
+        self.is_arb = is_arb
 
     @property
     def id(self) -> int:
@@ -25,6 +31,3 @@ class InputTx:
     @property
     def inval(self) -> float:
         return self.input_token_value
-
-    def example():
-        raise NotImplementedError
