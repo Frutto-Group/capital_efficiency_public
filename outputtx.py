@@ -1,104 +1,34 @@
-import numpy as np
-
-AMM = "AMM"
-PMM = "PMM"
-
+from typing import str, float
 
 class OutputTx:
     def __init__(self,
-                 index: int,
                  input_token_type: str,
                  output_token_type: str,
-                 input_token_value: float,
-                 output_token_value: float,
-                 input_token_pool_initial_value: float,
-                 output_token_pool_initial_value: float,
-                 input_token_pool_inventory_value: float,
-                 output_token_pool_inventory_value: float,
-                 marginal_market_price: float,
-                 oracle_market_price: float,
-                 market_maker_type: str
-                 ) -> None:
-        self.index = index
+                 inpool_init_val: float,
+                 outpool_init_val: float,
+                 inpool_after_val: float,
+                 outpool_after_val: float,
+                 market_rate: float,
+                 after_rate: float
+                 ):
+        """
+        Information associated with each swap for computing metrics
+
+        Parameters:
+        input_token_type: input token name
+        output_token_type: output token name
+        inpool_init_val: amount of input token originally in market maker's liquidiy pool
+        outpool_init_val: amount of output token originally in market maker's liquidiy pool
+        inpool_after_val: amount of input token in market maker's liquidiy pool after swap
+        outpool_after_val: amount of output token in market maker's liquidiy pool after swap
+        market_rate: exchange rate in market outside market maker
+        after_rate: exchange rate inside market maker of swap types after swap occurs
+        """
         self.input_token_type = input_token_type
         self.output_token_type = output_token_type
-        self.input_token_value = input_token_value
-        self.output_token_value = output_token_value
-        self.input_token_pool_initial_value = input_token_pool_initial_value
-        self.output_token_pool_initial_value = output_token_pool_initial_value
-        self.input_token_pool_inventory_value = input_token_pool_inventory_value
-        self.output_token_pool_inventory_value = output_token_pool_inventory_value
-        self.marginal_market_price = marginal_market_price
-        self.oracle_market_price = oracle_market_price
-        self.market_maker_type = market_maker_type
-
-    def show(self) -> None:
-        print(f'Transaction #{self.index:>7d}: '
-              'Input  {self.input_token_type} w/ amount {self.input_token_value:12.6f}, '
-              'Output {self.output_token_type} w/amount {self.output_token_value:12.6f}, '
-              'Input  {self.input_token_type} w/inital amount in pool  {self.input_token_pool_initial_value:12.6f}, '
-              'Output {self.output_token_type} w/inital amount in pool {self.output_token_pool_initial_value:12.6f}, '
-              'Input  {self.input_token_type} w/inventory amount in pool  {self.input_token_pool_inventory_value:12.6f}, '
-              'Output {self.output_token_type} w/inventory amount in pool {self.output_token_pool_inventory_value:12.6f}, '
-              'Marginal Market Price {self.marginal_market_price} and Oracle Market Price{oracle_market_price}')
-
-    @property
-    def id(self) -> int:
-        return self.index
-
-    @property
-    def intype(self) -> str:
-        return self.input_token_type
-
-    @property
-    def outtype(self) -> str:
-        return self.output_token_type
-
-    @property
-    def inval(self) -> float:
-        return self.input_token_value
-
-    @property
-    def outval(self) -> float:
-        return self.output_token_value
-
-    @property
-    def inpoolinitval(self) -> float:
-        return self.input_token_pool_initial_value
-
-    @property
-    def outpoolinvval(self) -> float:
-        return self.output_token_pool_initial_value
-
-    @property
-    def inpoolinvval(self) -> float:
-        return self.input_token_pool_inventory_value
-
-    @property
-    def outpoolinitval(self) -> float:
-        return self.output_token_pool_inventory_value
-
-    @property
-    def mmp(self) -> float:
-        return self.marginal_market_price
-
-    @property
-    def omp(self) -> float:
-        return self.oracle_market_price
-
-    @property
-    def mmt(self) -> str:
-        return self.market_maker_type
-
-
-if __name__ == '__main__':
-    otx = OutputTx(9, 'A', 'B', 100, 100, 1000, 1000, 500, 500, 1, 1, AMM)
-    otx.show()
-    print(otx.id,
-          otx.inval, otx.intype,
-          otx.outtype, otx.outval,
-          otx.intype, otx.inpoolinitval,
-          otx.outtype, otx.outpoolinitval,
-          otx.intype, otx.inpoolinvval,
-          otx.outtype, otx.outpoolinvval,
-          otx.mmp, otx.omp, otx.mmt)
+        self.inpool_init_val = inpool_init_val
+        self.outpool_init_val = outpool_init_val
+        self.inpool_after_val = inpool_after_val
+        self.outpool_after_val = outpool_after_val
+        self.market_rate = market_rate
+        self.after_rate = after_rate
