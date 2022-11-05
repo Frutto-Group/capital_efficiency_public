@@ -3,69 +3,75 @@ import os
 import json
 import pickle
 import matplotlib
-from types import SimpleNamespace
 
 import oracles
 import marketmakers
 import metrics
-import visualizers
 import trafficgens
 
-KEYWORDS = [
-    'traffics',
-    'ext_prices',
-    'outputs',
-    'statuses',
-    'slippage',
-    # 'iloss'
-]
-
+import matplotlib.pyplot as plt
+import json
 
 def simulate(config, reload):
     matplotlib.use('Agg')
 
-    if reload:
-        with open(os.path.join(config['path'], 'simulation_data.pkl'), 'rb') as f:
-            sim_data = pickle.load(f)
-    else:
-        if not os.path.exists(config['path']):
-            os.makedirs(config['path'])
+    if not os.path.exists(config['path']):
+        os.makedirs(config['path'])
 
-        _TrafficGenClass = getattr(trafficgens, config['traffic']['type'])
-        _traffic_generator = _TrafficGenClass(
-            **config['traffic']['init_kwargs'])
+    _TrafficGenClass = getattr(trafficgens, config['traffic']['type'])
+    _traffic_generator = _TrafficGenClass(
+        **config['traffic']['init_kwargs'])
 
-        _OracleClass = getattr(oracles, config['oracle']['type'])
-        _oracle = _OracleClass(**config['oracle']['init_kwargs'])
+    _OracleClass = getattr(oracles, config['oracle']['type'])
+    _oracle = _OracleClass(**config['oracle']['init_kwargs'])
 
-        _MMClass = getattr(marketmakers, config['market_maker']['type'])
-        mm = _MMClass(**config['market_maker']['init_kwargs'])
+    _MMClass = getattr(marketmakers, config['market_maker']['type'])
+    mm = _MMClass(**config['market_maker']['init_kwargs'])
 
-        mm.configure_arbitrage(**config['market_maker']['arb_kwargs'])
+    mm.configure_simulation(**config['market_maker']['simulate_kwargs'])
 
-        traffics = _traffic_generator.generate_traffic()
-        ext_prices = _oracle.simulate_ext_prices(traffics)
-        outputs, statuses = mm.simulate_traffic(traffics, ext_prices)
-        slippage = metrics.slippage(outputs)
-        #iloss = metrics.impermanent_loss(ext_prices, statuses)
-        # TODO: Fill in other metrics !!
+    # generate prices, traffic and store in files
+    # ext_prices = _oracle.simulate_ext_prices()
+    # traffics = _traffic_generator.generate_traffic(ext_prices)
+    # f = open("traffic.obj", "wb")
+    # pickle.dump(traffics, f)
+    # f.close()
+    # f = open("prices.obj", "wb")
+    # pickle.dump(ext_prices, f)
+    # f.close()
 
-        sim_data = SimpleNamespace()
-        for keyword in KEYWORDS:
-            setattr(sim_data, keyword, eval(keyword))
+    # load prices, traffic frome files
+    f = open("traffic.obj", "rb")
+    traffics = pickle.load(f)
+    f.close()
+    f = open("prices.obj", "rb")
+    ext_prices = pickle.load(f)
+    f.close()
 
-        with open(os.path.join(config['path'], 'simulation_data.pkl'), 'wb') as f:
-            pickle.dump(sim_data, f)
+    outputs, statuses, status0, status1 = mm.simulate_traffic(traffics, ext_prices)
 
-    for visname, info in config['visualization'].items():
-        visfunc, kwargs = getattr(visualizers, visname), info
-        for keyword in KEYWORDS:
-            if keyword in visfunc.__code__.co_varnames:
-                kwargs[keyword] = getattr(sim_data, keyword)
+    # # compute metrics
+    capital_efficiency = metrics.capital_efficiency(outputs)
+    impermanent_loss = metrics.impermanent_loss(status0, statuses)
+    rate_change = metrics.price_impact(outputs)
 
-        fig = visfunc(**kwargs)
-        fig.savefig(os.path.join(config['path'], f'{visname}.jpg'))
-
+    # # rate change
+    # plt.scatter([x[0] for x in rate_change], [x[1] for x in rate_change], s=1)
+    # plt.savefig('images/multi_batch/multi_tok/rate_change/mpmm.png')
+    # plt.clf()
+    # pickle.dump(rate_change, open("raw_data/multi_batch/multi_tok/rate_change/mpmm.pkl", "wb"))
+    
+    # # capital efficiency
+    # plt.scatter([x[0] for x in capital_efficiency], [x[1] for x in capital_efficiency], s=1)
+    # plt.savefig('images/multi_batch/multi_tok/cap_eff/amm.png')
+    # plt.clf()
+    # pickle.dump(capital_efficiency, open("raw_data/multi_batch/multi_tok/cap_eff/amm.pkl", "wb"))
+    
+    # # impermanent loss
+    # plt.scatter([x[0] for x in impermanent_loss], [x[1] for x in impermanent_loss], s=1)
+    # plt.savefig('images/multi_batch/multi_tok/imp_los/amm.png')
+    # plt.clf()
+    # pickle.dump(impermanent_loss, open("raw_data/multi_batch/multi_tok/imp_los/amm.pkl", "wb"))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Market Maker Simulator')
