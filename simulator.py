@@ -48,29 +48,29 @@ def simulate(config, reload):
     ext_prices = pickle.load(f)
     f.close()
 
-    outputs, statuses, status0, status1 = mm.simulate_traffic(traffics, ext_prices)
+    outputs, statuses, status0 = mm.simulate_traffic(traffics, ext_prices)
 
     # # compute metrics
     capital_efficiency = metrics.capital_efficiency(outputs)
     impermanent_loss = metrics.impermanent_loss(status0, statuses)
-    rate_change = metrics.price_impact(outputs)
+    price_impact = metrics.price_impact(outputs)
 
-    # # rate change
-    # plt.scatter([x[0] for x in rate_change], [x[1] for x in rate_change], s=1)
-    # plt.savefig('images/multi_batch/multi_tok/rate_change/mpmm.png')
-    # plt.clf()
+    # price_impact
+    plt.scatter([x[0] for x in price_impact], [x[1] for x in price_impact], s=1)
+    plt.savefig('images/mamm_pi.png')
+    plt.clf()
     # pickle.dump(rate_change, open("raw_data/multi_batch/multi_tok/rate_change/mpmm.pkl", "wb"))
     
     # # capital efficiency
-    # plt.scatter([x[0] for x in capital_efficiency], [x[1] for x in capital_efficiency], s=1)
-    # plt.savefig('images/multi_batch/multi_tok/cap_eff/amm.png')
-    # plt.clf()
+    plt.scatter([x[0] for x in capital_efficiency], [x[1] for x in capital_efficiency], s=1)
+    plt.savefig('images/mamm_ce.png')
+    plt.clf()
     # pickle.dump(capital_efficiency, open("raw_data/multi_batch/multi_tok/cap_eff/amm.pkl", "wb"))
     
     # # impermanent loss
-    # plt.scatter([x[0] for x in impermanent_loss], [x[1] for x in impermanent_loss], s=1)
-    # plt.savefig('images/multi_batch/multi_tok/imp_los/amm.png')
-    # plt.clf()
+    plt.scatter([i for i in range(len(impermanent_loss))], impermanent_loss, s=1)
+    plt.savefig('images/mamm_il.png')
+    plt.clf()
     # pickle.dump(impermanent_loss, open("raw_data/multi_batch/multi_tok/imp_los/amm.pkl", "wb"))
 
 if __name__ == '__main__':
