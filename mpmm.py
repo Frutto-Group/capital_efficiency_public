@@ -2,8 +2,7 @@ from typing import List, Tuple
 from imarketmaker import MarketMakerInterface
 from inputtx import InputTx
 from outputtx import OutputTx
-from price import Price
-from poolstatus import PoolStatusInterface, MultiTokenPoolStatus
+from poolstatus import MultiTokenPoolStatus
 from copy import deepcopy
 
 class MPMM(MarketMakerInterface):
@@ -17,7 +16,7 @@ class MPMM(MarketMakerInterface):
         2. token_infos: specifies starting token balances; of the form:
         [[1100, 0], [2000, 0], [1000,0]]
         """
-        self.token_info = MultiTokenPoolStatus({tokens[i]: [token_infos[i][0], token_infos[i][1]] \
+        self.token_info = MultiTokenPoolStatus({tokens[i]: token_infos[i] \
             for i in range(len(tokens))})
         self.equilibriums = deepcopy(self.token_info)
         self.float_tolerance = 1e-8
@@ -113,7 +112,7 @@ class MPMM(MarketMakerInterface):
         lst = []
         I, O = self.equilibriums[intype][0], self.equilibriums[outtype][0]
 
-        in_0, out_0 = self.token_info[intype], self.token_info[outtype]
+        in_0, out_0 = self.token_info[intype][0], self.token_info[outtype][0]
         lst.append(((in_0, out_0), self.__distSq(I, O, in_0, out_0)))
 
         in_1, out_1 = self.__getEquilibrium(intype, outtype, k, 1 / p)
@@ -168,8 +167,8 @@ class MPMM(MarketMakerInterface):
         1. Equilibrium balance for shortage token type
         2. Equilibrium balance for excess token type
         """
-        s = self.token_info[short]
-        l = self.token_info[long]
+        s = self.token_info[short][0]
+        l = self.token_info[long][0]
         l_e = self.__argMin(s, l, k, p, self.equilibriums[short][0], self.equilibriums[long][0])
 
         return s + s / (2*k) * ((1 + (4*k * (l - l_e)) / (s * p))**0.5 - 1), l_e
@@ -238,7 +237,7 @@ class MPMM(MarketMakerInterface):
             d = tx.inval
             k = self.getK(tx.intype, tx.outtype)
             p = self.prices[tx.outtype] / self.prices[tx.intype]
-            i_0, o_0 = self.token_info[tx.intype], self.token_info[tx.outtype]
+            i_0, o_0 = self.token_info[tx.intype][0], self.token_info[tx.outtype][0]
             in_e, out_e = self.calculate_equilibriums(tx.intype, tx.outtype)
 
             if o_0 / out_e > i_0 / in_e:
