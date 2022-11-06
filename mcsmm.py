@@ -15,7 +15,7 @@ class MCSMM(MarketMakerInterface):
         2. token_infos: specifies starting token balances; of the form:
         [[1100, 0], [2000, 0], [1000,0]]
         """
-        self.token_info = MultiTokenPoolStatus({tokens[i]: [token_infos[i][0], token_infos[i][1]] \
+        self.token_info = MultiTokenPoolStatus({tokens[i]: token_infos[i] \
             for i in range(len(tokens))})
         self.equilibriums = None
 
@@ -39,7 +39,7 @@ class MCSMM(MarketMakerInterface):
         """
         p = self.prices[tx.outtype] / self.prices[tx.intype]
         if out_amt == None:
-            if (tx.inval / p > self.token_info[tx.outtype]):
+            if (tx.inval / p > self.token_info[tx.outtype][0]):
                 out_amt = 0
                 tx.inval = 0
             else:
