@@ -1,4 +1,4 @@
-from typing import List, Tuple, float
+from typing import List, Tuple
 from outputtx import OutputTx
 from poolstatus import PoolStatusInterface
 
@@ -26,6 +26,7 @@ def price_impact(output: List[List[OutputTx]]) -> List[Tuple[float, float]]:
                 result.append([drained, abs((info.after_rate - rate) / rate)])
                 i += 1
     
+    print("price_impact: " + str(sum([i[1] for i in result]) / len(result)))
     return result
 
 def capital_efficiency(output: List[List[OutputTx]]) -> List[Tuple[float, float]]:
@@ -49,6 +50,8 @@ def capital_efficiency(output: List[List[OutputTx]]) -> List[Tuple[float, float]
                 drained = 1 - info.outpool_after_val / info.outpool_init_val
                 result.append([drained, rate / info.market_rate])
     
+    print(len(result))
+    print("capital_efficiency: " + str(sum([i[1] for i in result]) / len(result)))
     return result
 
 def impermanent_loss(initial: PoolStatusInterface,
@@ -70,4 +73,5 @@ def impermanent_loss(initial: PoolStatusInterface,
                 total_change += abs((status[token][0] - start) / start)
             results.append(total_change / len(initial))
     
+    print("impermanent_loss: " + str(sum(results) / len(results)))
     return results
