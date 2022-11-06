@@ -1,6 +1,6 @@
 from imarketmaker import MarketMakerInterface
 from inputtx import InputTx
-from typing import List, Tuple, str, float
+from typing import List, Tuple
 from outputtx import OutputTx
 from poolstatus import MultiTokenPoolStatus
 
@@ -15,7 +15,7 @@ class MAMM(MarketMakerInterface):
         2. token_infos: specifies starting token balances; of the form:
         [[1100, 0], [2000, 0], [1000,0]]
         """
-        self.token_info = MultiTokenPoolStatus({tokens[i]: [token_infos[i][0], token_infos[i][1]] \
+        self.token_info = MultiTokenPoolStatus({tokens[i]: token_infos[i] \
             for i in range(len(tokens))})
         self.equilibriums = None
 
@@ -31,11 +31,10 @@ class MAMM(MarketMakerInterface):
         1. output information associated with swap (after_rate is incorrect)
         2. status of pool ater swap
         """
-        if out_amt == None:
-            in_type, in_val, out_type = tx.intype, tx.inval, tx.outtype
-            in_balance, out_balance = self.token_info[in_type], self.token_info[out_type]
-            const = in_balance * out_balance
-            out_amt = const*(1/in_balance - (1/(in_balance + in_val)))
+        in_type, in_val, out_type = tx.intype, tx.inval, tx.outtype
+        in_balance, out_balance = self.token_info[in_type][0], self.token_info[out_type][0]
+        const = in_balance * out_balance
+        out_amt = const*(1/in_balance - (1/(in_balance + in_val)))
 
         output_tx, pool_stat = super().swap(tx, out_amt)
         output_tx.after_rate = in_val / \
@@ -55,8 +54,8 @@ class MAMM(MarketMakerInterface):
         1. Equilibrium balance for input token
         2. Equilibrium balance for output token
         """
-        const = self.token_info[intype] * self.token_info[outtype]
-        market_rate = self.external_price[intype] / self.external_price[outtype]
+        const = self.token_info[intype][0] * self.token_info[outtype][0]
+        market_rate = self.prices[outtype] / self.prices[intype]
         new_out = (const / market_rate) ** 0.5
 
         return const / new_out, new_out
