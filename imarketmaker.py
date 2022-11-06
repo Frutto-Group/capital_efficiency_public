@@ -43,7 +43,7 @@ class MarketMakerInterface:
         3. initial status of pool
         4. final status of pool
         """
-        self.external_price = external_price[0]
+        self.prices = external_price[0]
         initial_copy = deepcopy(self.token_info)
 
         txs = []
@@ -65,7 +65,7 @@ class MarketMakerInterface:
                 equilibrium_copy = deepcopy(self.equilibriums)
 
             for tx in batch:
-                if tx.is_arb:
+                if tx.is_arb and self.arb:
                     output_lst, stat_lst = self.arbitrage()
                     for i in output_lst:
                         batch_txs.append(i)
@@ -83,7 +83,7 @@ class MarketMakerInterface:
             txs.append(batch_txs)
             stats.append(batch_stats)
 
-        return txs, stats, initial_copy, self.token_info
+        return txs, stats, initial_copy
     
     def swap(self, tx: InputTx, out_amt: float, execute: bool = True
     ) -> Tuple[OutputTx, PoolStatusInterface]:
@@ -104,11 +104,11 @@ class MarketMakerInterface:
             raise NotImplementedError
         else:
             if self.multi_token:
-                in0, out0 = self.token_info[tx.intype], self.token_info[tx.outtype]
+                in0, out0 = self.token_info[tx.intype][0], self.token_info[tx.outtype][0]
                 
                 if execute:
-                    self.token_info[tx.intype] += tx.inval
-                    self.token_info[tx.outtype] -= out_amt
+                    self.token_info[tx.intype][0] += tx.inval
+                    self.token_info[tx.outtype][0] -= out_amt
             else:
                 pool_info = self.token_info[(tx.intype, tx.outtype)]
                 in0, out0 = pool_info[0], pool_info[1]
@@ -120,15 +120,15 @@ class MarketMakerInterface:
                     reverse_pool = self.token_info[(tx.outtype, tx.intype)]
                     reverse_pool[0] -= out_amt
                     reverse_pool[1] += tx.inval
-            
+
             return OutputTx(
-                input_token_type = in0,
-                output_token_type = out0,
+                input_token_type = tx.intype,
+                output_token_type = tx.outtype,
                 inpool_init_val = in0,
                 outpool_init_val = out0,
                 inpool_after_val = in0 + tx.inval,
                 outpool_after_val = out0 - out_amt,
-                market_rate = self.external_price[tx.outtype] / self.external_price[tx.intype],
+                market_rate = self.prices[tx.outtype] / self.prices[tx.intype],
                 after_rate = 1
             ), deepcopy(self.token_info)
     
@@ -170,13 +170,13 @@ class MarketMakerInterface:
                         reverse_pool = (tok2, tok1)
                         if tok2 != self.crash_type:
                             rate_dict = self.getRate(pool)
-                            if rate_dict["rate"] > info[0]["rate"] and \
+                            if rate_dict["rate"] > info[1]["rate"] and \
                                 rate_dict["in_amt"] > lim:
                                 info[0] = pool
                                 info[1] = rate_dict
                         if tok1 != self.crash_type:
                             rate_dict = self.getRate(reverse_pool)
-                            if rate_dict["rate"] > info[0]["rate"] and \
+                            if rate_dict["rate"] > info[1]["rate"] and \
                                 rate_dict["in_amt"] > lim:
                                 info[0] = reverse_pool
                                 info[1] = rate_dict
@@ -184,7 +184,7 @@ class MarketMakerInterface:
                 for p in self.token_info.keys():
                     if not p[1] == self.crash_type:
                         rate_dict = self.getRate(p)
-                        if rate_dict["rate"] > info[0]["rate"] and \
+                        if rate_dict["rate"] > info[1]["rate"] and \
                             rate_dict["in_amt"] > lim:
                             info[0] = p
                             info[1] = rate_dict
@@ -193,7 +193,7 @@ class MarketMakerInterface:
                 output, token_info = self.swap(InputTx(info[0][0], info[0][1], \
                     info[1]["in_amt"]), info[1]["out_amt"])
                 outputtx_lst.append(output)
-                poolstatus_lst.append(token_info)
+                poolstatus_lst.append(token_info)              
             else:
                 break
         
@@ -215,17 +215,24 @@ class MarketMakerInterface:
         }
         """
         in_e, out_e = self.calculate_equilibriums(pool[0], pool[1])
-        market_rate = self.external_price[pool[1]] / self.external_price[pool[0]]
+        market_rate = self.prices[pool[1]] / self.prices[pool[0]]
 
         if self.multi_token:
             in_amt, out_amt = \
-                in_e - self.token_info[pool[0]], self.token_info[pool[1]] - out_e
+                in_e - self.token_info[pool[0]][0], self.token_info[pool[1]][0] - out_e
         else:
             in_amt, out_amt = \
                 in_e - self.token_info[pool][0], self.token_info[pool][1] - out_e
+        
+        try:
+            internal_rate = in_amt / out_amt
+        except:
+            internal_rate = 1
+        if internal_rate == 0:
+            internal_rate = 1
 
         return {
                 "in_amt": in_amt,
                 "out_amt": out_amt,
-                "rate": market_rate / abs(in_amt / out_amt)
+                "rate": market_rate / internal_rate
             }
