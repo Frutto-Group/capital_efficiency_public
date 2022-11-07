@@ -6,7 +6,7 @@ from copy import deepcopy
 
 class MarketMakerInterface:
     def configure_simulation(self, reset_tx: str = "False", arb: str = "True",
-    arb_actions: int = 1, crash_type: str = "None", multi_token: str = "True"):
+    arb_actions: int = 1, crash_type: List[str] = [], multi_token: str = "True"):
         """
         Configures settings for traffic simulation
 
@@ -14,7 +14,7 @@ class MarketMakerInterface:
         1. reset_tx: whether or not the pool should be reset after every swap
         2. arb: whether or not arbitrage opportunities are acted on
         3. arb_actions: how many swaps can occur for one arbitrage opportunity
-        4. crash_type: if not "None", specifies the token type(s) that will never be
+        4. crash_type: if not empty, specifies the token type(s) that will never be
         removed from the pool
         5. multi_token: indicates if there are multi token pools
         """
@@ -139,8 +139,8 @@ class MarketMakerInterface:
         2. outtype: output token type
 
         Returns:
-        1. Equilibrium balance for input token
-        2. Equilibrium balance for output token
+        1. equilibrium balance for input token
+        2. equilibrium balance for output token
         """
         raise NotImplementedError
     
