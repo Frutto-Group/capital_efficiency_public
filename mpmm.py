@@ -6,18 +6,19 @@ from poolstatus import MultiTokenPoolStatus
 from copy import deepcopy
 
 class MPMM(MarketMakerInterface):
-    def __init__(self, tokens: List[str], token_infos: List[Tuple[float, float]]):
+    def __init__(self, single_pools: List[str], single_infos: List[Tuple[float, float]],
+    pairwise_pools = None, pairwise_infos = None):
         """
-        Creates a proactive market maker with multi token liquidity pool
+        Creates a multi token constant product liquidity pool market maker
 
         Parameters:
-        1. tokens: specifies tokens in liquidity pool; of the form:
-        ["BTC", "ETH", "USDT"]
-        2. token_infos: specifies starting token balances; of the form:
-        [[1100, 0], [2000, 0], [1000,0]]
+        1. single_pools: specifies tokens in liquidity pool
+        2. single_infos: specifies starting token balances
+        3. pairwise_pools: irrelevant (for pairwise pool market makers)
+        4. pairwise_info: irrelevant (for pairwise market makers)
         """
-        self.token_info = MultiTokenPoolStatus({tokens[i]: token_infos[i] \
-            for i in range(len(tokens))})
+        self.token_info = MultiTokenPoolStatus({single_pools[i]: single_infos[i] \
+            for i in range(len(single_pools))})
         self.equilibriums = deepcopy(self.token_info)
         self.float_tolerance = 1e-8
     
@@ -104,8 +105,8 @@ class MPMM(MarketMakerInterface):
         2. outtype: output token type
 
         Returns:
-        1. Equilibrium balance for input token
-        2. Equilibrium balance for output token
+        1. equilibrium balance for input token
+        2. equilibrium balance for output token
         """
         k = self.getK(intype, outtype)
         p = self.prices[outtype] / self.prices[intype]
@@ -141,7 +142,6 @@ class MPMM(MarketMakerInterface):
                             out_e = temp_out_e
                             dist = lst[1]
 
-
                 else:
                     s_e, l_e = temp_out_e, temp_in_e
 
@@ -164,8 +164,8 @@ class MPMM(MarketMakerInterface):
         2. long: excess token type
 
         Returns:
-        1. Equilibrium balance for shortage token type
-        2. Equilibrium balance for excess token type
+        1. equilibrium balance for shortage token type
+        2. equilibrium balance for excess token type
         """
         s = self.token_info[short][0]
         l = self.token_info[long][0]
@@ -200,6 +200,9 @@ class MPMM(MarketMakerInterface):
         2. s_e: shortage token equilibrium balance
         3. p: exchange rates in units of excess tokens / shortage tokens
         4. k: k parameter between 2 token types
+
+        Returns:
+        1. excess token balance
         """
         return l_e - p * (x - s_e) * (1 - k + k * s_e / x)
     
@@ -214,6 +217,9 @@ class MPMM(MarketMakerInterface):
         2. L: excess token equilibrium balance
         3. p: exchange rates in units of excess tokens / shortage tokens
         4. k: k parameter between 2 token types
+
+        Returns:
+        1. Shortage token balance
         """
         return (y-L-p*S+2*k*p*S-(y**2-2*y*L+L**2-2*y*p*S+4*k*y*p*S+2*L*p*S-4*k*L*p*S+p**2*S**2)**0.5)\
             /(2*(-1+k)*p)
@@ -233,32 +239,32 @@ class MPMM(MarketMakerInterface):
         1. output information associated with swap (after_rate is incorrect)
         2. status of pool ater swap
         """
+        i_0, o_0 = self.token_info[tx.intype][0], self.token_info[tx.outtype][0]
+        in_e, out_e = self.calculate_equilibriums(tx.intype, tx.outtype)
         if out_amt == None:
             d = tx.inval
             k = self.getK(tx.intype, tx.outtype)
-            p = self.prices[tx.outtype] / self.prices[tx.intype]
-            i_0, o_0 = self.token_info[tx.intype][0], self.token_info[tx.outtype][0]
-            in_e, out_e = self.calculate_equilibriums(tx.intype, tx.outtype)
+            p = self.prices[tx.outtype] / self.prices[tx.intype]     
 
             if o_0 / out_e > i_0 / in_e:
                 s_e, l_e = in_e, out_e
                 static_amt = s_e - i_0
 
-                if o_0 / out_e > i_0 / in_e:
-                    s_e, l_e = in_e, out_e
-                    static_amt = s_e - i_0
-
-                    if static_amt < d:
-                        out_amt = self.__solveShort(d - static_amt + s_e, s_e, l_e, p, k)
-                    else:
-                        out_amt = self.__solveLong(i_0 + d, l_e, s_e, 1/p, k)
+                if static_amt < d:
+                    new_pt = self.__solveShort(d - static_amt + s_e, s_e, l_e, p, k)
                 else:
-                    s_e, l_e = out_e, in_e
-                    out_amt = self.__solveShort(i_0 + d, l_e, s_e, p, k)
+                    new_pt = self.__solveLong(i_0 + d, l_e, s_e, 1/p, k)
+            else:
+                s_e, l_e = out_e, in_e
+                new_pt = self.__solveShort(i_0 + d, l_e, s_e, p, k)
         
-        output_tx, pool_stat = super().swap(tx, out_amt, execute)
+        if out_amt == None:
+            output_tx, pool_stat = super().swap(tx, o_0 - new_pt, execute)
+        else:
+            output_tx, pool_stat = super().swap(tx, out_amt, execute)
+
         if execute:
-            o, _ = self.swap(tx, out_amt, False)
+            o, _ = self.swap(tx, None, False)
             output_tx.after_rate = tx.inval / \
                 (o.outpool_init_val - o.outpool_after_val)
         
