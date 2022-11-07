@@ -1,33 +1,30 @@
-from typing import List, Tuple, float, str
+from typing import List, Tuple
 from imarketmaker import MarketMakerInterface
 from inputtx import InputTx
 from outputtx import OutputTx
 from poolstatus import PairwiseTokenPoolStatus
 
 class CSMM(MarketMakerInterface):
-    def __init__(self, token_pairs: List[Tuple[str, str]],
-    token_amounts: List[Tuple[float, float, float]]):
+    def __init__(self, pairwise_pools: List[Tuple[str, str]],
+    pairwise_infos: List[Tuple[float, float, float]], single_pools = None, single_infos = None):
         """
-        Creates a constant sum pairwise liquidity pool market maker
+        Creates a constant product pairwise liquidity pool market maker
 
         Parameters:
-        1. token_pairs: specifies pairwise liquidity pools; of the form:
-        [["BTC", "ETH"],
-         ["ETH", "BTC"],
-         ["BTC", "USDT"],
-         ["USDT", "BTC"]]
-        2. token_info: specifies liquidity pool starting token balances; of the form:
-        [[1100, 500, 0],
-         [500, 1100, 0],
-         [200, 500, 0],
-         [500, 200, 0]]
+        1. pairwise_pools: specifies pairwise liquidity pools
+        2. pairwise_infos: specifies liquidity pool starting token balances
+        3. single_pools: irrelevant (for multi token market makers)
+        4. single_infos: irrelevant (for multi token market makers)
         """
-        self.token_info = PairwiseTokenPoolStatus(token_pairs, token_amounts)
+        self.token_info = PairwiseTokenPoolStatus(pairwise_pools, pairwise_infos)
         self.equilibriums = None
     
     def arbitrage(self, lim: float = 1e-8) -> Tuple[None, None]:
         """
         Performs no arbitrage since it is impossible on CSMM
+
+        Returns:
+        1. 2 empty lists
         """
         return [], []
 
@@ -47,7 +44,7 @@ class CSMM(MarketMakerInterface):
         if out_amt == None:
             if (tx.inval / p > self.token_info[(tx.intype, tx.outtype)][1]):
                 out_amt = 0
-                tx.inval = 0
+                tx.input_token_value = 0
             else:
                 out_amt = tx.inval / p
 
