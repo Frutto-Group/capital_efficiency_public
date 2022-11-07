@@ -13,7 +13,10 @@ def price_impact(output: List[List[OutputTx]]) -> List[Tuple[float, float]]:
     output token balance is drained, the magnitude is higher.
 
     Parameters:
-    output: swap metrics
+    1. output: swap metrics
+
+    Returns:
+    1. percentage changes of exchange rates after each swap
     """
     result = []
     
@@ -26,7 +29,7 @@ def price_impact(output: List[List[OutputTx]]) -> List[Tuple[float, float]]:
                 result.append([drained, abs((info.after_rate - rate) / rate)])
                 i += 1
     
-    print("price_impact: " + str(sum([i[1] for i in result]) / len(result)))
+    print("avg price impact: " + str(sum([i[1] for i in result]) / len(result)))
     return result
 
 def capital_efficiency(output: List[List[OutputTx]]) -> List[Tuple[float, float]]:
@@ -39,7 +42,10 @@ def capital_efficiency(output: List[List[OutputTx]]) -> List[Tuple[float, float]
     the output token balance is drained, the ratio is higher.
     
     Parameters:
-    output: swap metrics
+    1. output: swap metrics
+
+    Returns:
+    1. ratios of internal vs market exchange rate for each swap
     """
     result = []
 
@@ -50,28 +56,41 @@ def capital_efficiency(output: List[List[OutputTx]]) -> List[Tuple[float, float]
                 drained = 1 - info.outpool_after_val / info.outpool_init_val
                 result.append([drained, rate / info.market_rate])
     
-    print(len(result))
-    print("capital_efficiency: " + str(sum([i[1] for i in result]) / len(result)))
+    print("avg capital efficiency: " + str(sum([i[1] for i in result]) / len(result)))
     return result
 
 def impermanent_loss(initial: PoolStatusInterface,
-    history: List[List[PoolStatusInterface]]) -> List[float]:
+    history: List[List[PoolStatusInterface]]) -> Tuple[List[float], List[float]]:
     """
-    Measures the magnitude (percent) of the average impermanent loss or gain
+    Measures the amount of impermanent loss or gain between batches
 
     Parameters:
-    initial: pool state before any swaps
-    history: pool state after each transaction
+    1. initial: pool state before any swaps
+    1. history: pool state after each transaction
+
+    Returns:
+    1. percentage increases of token balances after each swap (relative to start)
+    2. percentage decreases of token balances after each swap (relative to start)
     """
-    results = []
+    pos_results = []
+    neg_results = []
 
     for batch in history:
         for status in batch:
-            total_change = 0
+            pos_changes = []
+            neg_changes = []
             for token in initial:
-                start = initial[token][0]
-                total_change += abs((status[token][0] - start) / start)
-            results.append(total_change / len(initial))
+                change = status[token][0] / initial[token][0] - 1
+                if change > 0:
+                    pos_changes.append(change)
+                else:
+                    neg_changes.append(change)
+
+            if len(pos_changes):
+                pos_results.append(sum(pos_changes) / len(pos_changes))
+            if len(neg_changes):
+                neg_results.append(abs(sum(neg_changes)) / len(neg_changes))
     
-    print("impermanent_loss: " + str(sum(results) / len(results)))
-    return results
+    print("avg impermanent gain: " + str(sum(pos_results) / len(pos_results)))
+    print("avg impermanent loss: " + str(sum(neg_results) / len(neg_results)))
+    return pos_results, neg_results
