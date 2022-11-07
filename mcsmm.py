@@ -5,23 +5,27 @@ from outputtx import OutputTx
 from poolstatus import MultiTokenPoolStatus
 
 class MCSMM(MarketMakerInterface):
-    def __init__(self, tokens: List[str], token_infos: List[Tuple[float, float]]):
+    def __init__(self, single_pools: List[str], single_infos: List[Tuple[float, float]],
+    pairwise_pools = None, pairwise_infos = None):
         """
-        Creates a multi token constant sum liquidity pool market maker
+        Creates a multi token constant product liquidity pool market maker
 
         Parameters:
-        1. tokens: specifies tokens in liquidity pool; of the form:
-        ["BTC", "ETH", "USDT"]
-        2. token_infos: specifies starting token balances; of the form:
-        [[1100, 0], [2000, 0], [1000,0]]
+        1. single_pools: specifies tokens in liquidity pool
+        2. single_infos: specifies starting token balances
+        3. pairwise_pools: irrelevant (for pairwise pool market makers)
+        4. pairwise_info: irrelevant (for pairwise market makers)
         """
-        self.token_info = MultiTokenPoolStatus({tokens[i]: token_infos[i] \
-            for i in range(len(tokens))})
+        self.token_info = MultiTokenPoolStatus({single_pools[i]: single_infos[i] \
+            for i in range(len(single_pools))})
         self.equilibriums = None
 
     def arbitrage(self, lim: float = 1e-8) -> Tuple[None, None]:
         """
         Performs no arbitrage since it is impossible on MCSMM
+
+        Returns:
+        1. 2 empty lists
         """
         return [], []
 
@@ -41,7 +45,7 @@ class MCSMM(MarketMakerInterface):
         if out_amt == None:
             if (tx.inval / p > self.token_info[tx.outtype][0]):
                 out_amt = 0
-                tx.inval = 0
+                tx.input_token_value = 0
             else:
                 out_amt = tx.inval / p
 
