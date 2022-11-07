@@ -5,18 +5,19 @@ from outputtx import OutputTx
 from poolstatus import MultiTokenPoolStatus
 
 class MAMM(MarketMakerInterface):
-    def __init__(self, tokens: List[str], token_infos: List[Tuple[float, float]]):
+    def __init__(self, single_pools: List[str], single_infos: List[Tuple[float, float]],
+    pairwise_pools = None, pairwise_infos = None):
         """
         Creates a multi token constant product liquidity pool market maker
 
         Parameters:
-        1. tokens: specifies tokens in liquidity pool; of the form:
-        ["BTC", "ETH", "USDT"]
-        2. token_infos: specifies starting token balances; of the form:
-        [[1100, 0], [2000, 0], [1000,0]]
+        1. single_pools: specifies tokens in liquidity pool
+        2. single_infos: specifies starting token balances
+        3. pairwise_pools: irrelevant (for pairwise pool market makers)
+        4. pairwise_info: irrelevant (for pairwise market makers)
         """
-        self.token_info = MultiTokenPoolStatus({tokens[i]: token_infos[i] \
-            for i in range(len(tokens))})
+        self.token_info = MultiTokenPoolStatus({single_pools[i]: single_infos[i] \
+            for i in range(len(single_pools))})
         self.equilibriums = None
 
     def swap(self, tx: InputTx, out_amt: float = None) -> Tuple[OutputTx, MultiTokenPoolStatus]:
@@ -51,8 +52,8 @@ class MAMM(MarketMakerInterface):
         2. outtype: output token type
 
         Returns:
-        1. Equilibrium balance for input token
-        2. Equilibrium balance for output token
+        1. equilibrium balance for input token
+        2. equilibrium balance for output token
         """
         const = self.token_info[intype][0] * self.token_info[outtype][0]
         market_rate = self.prices[outtype] / self.prices[intype]
