@@ -20,7 +20,7 @@ class MPMM(MarketMakerInterface):
         self.token_info = MultiTokenPoolStatus({single_pools[i]: single_infos[i] \
             for i in range(len(single_pools))})
         self.equilibriums = deepcopy(self.token_info)
-        self.float_tolerance = 1e-8
+        self.float_tolerance = 1e-6
     
     def getK(self, intype: str, outtype: str) -> float:
         """
@@ -94,7 +94,11 @@ class MPMM(MarketMakerInterface):
         x4 = -16*x1**2+192*t35*x2
         x5 = (x3+(x3**2+4*x4**3)**0.5)**(1/3)
 
-        return x1/(12*t35)+x4/(24*2**(2/3)*t35*x5)-(1/(48*2**(1/3)*t35))*x5
+        ans = x1/(12*t35)+x4/(24*2**(2/3)*t35*x5)-(1/(48*2**(1/3)*t35))*x5
+        if isinstance(ans, complex):
+            return ans.real
+        else:
+            return ans
     
     def calculate_equilibriums(self, intype: str, outtype: str) -> Tuple[float, float]:
         """
@@ -117,43 +121,20 @@ class MPMM(MarketMakerInterface):
         lst.append(((in_0, out_0), self.__distSq(I, O, in_0, out_0)))
 
         in_1, out_1 = self.__getEquilibrium(intype, outtype, k, 1 / p)
-        if in_1 != None and in_1 > 0 and out_1 > 0 and ((in_1 > in_0 and out_1 < out_0)\
-             or (out_1 > out_0 and in_1 < in_0)):
-            lst.append(((in_1, out_1), self.__distSq(I, O, in_1, out_1)))
+        if not(isinstance(in_1, complex) or isinstance(out_1, complex)):
+            if (in_1 + self.float_tolerance >= in_0 and out_0 + self.float_tolerance >= out_1) or \
+                (out_1 + self.float_tolerance >= out_0 and in_0 + self.float_tolerance >= in_1):
+                lst.append(((in_1, out_1), self.__distSq(I, O, in_1, out_1)))
 
         out_2, in_2 = self.__getEquilibrium(outtype, intype, k, p)
-        if in_2 != None and in_2 > 0 and out_2 > 0 and ((in_2 > in_0 and out_2 < out_0)\
-             or (out_2 > out_0 and in_2 < in_0)):
-            lst.append(((in_2, out_2), self.__distSq(I, O, in_2, out_2)))
+        if not(isinstance(in_2, complex) or isinstance(out_2, complex)):
+            if (in_2 + self.float_tolerance >= in_0 and out_0 + self.float_tolerance >= out_2) or \
+                (out_2 + self.float_tolerance >= out_0 and in_0 + self.float_tolerance >= in_2):
+                lst.append(((in_2, out_2), self.__distSq(I, O, in_2, out_2)))
 
-        in_e, out_e, dist = in_0, out_0, lst[0][1]
-        for lst in lst[1:]:
-            if lst[1] < dist:
-                temp_in_e = lst[0][0]
-                temp_out_e = lst[0][1]
-                if out_0 / temp_out_e > in_0 / temp_in_e:
-                    s_e, l_e = temp_in_e, temp_out_e
+        lst = sorted(lst, key=lambda x: x[1])
 
-                    if s_e + self.float_tolerance >= in_0 and l_e <= out_0 + self.float_tolerance:
-                        test_val = self.__solveLong(in_0, l_e, s_e, 1/p, k)
-
-                        if abs(test_val - out_0) < self.float_tolerance:
-                            in_e = temp_in_e
-                            out_e = temp_out_e
-                            dist = lst[1]
-
-                else:
-                    s_e, l_e = temp_out_e, temp_in_e
-
-                    if s_e + self.float_tolerance >= in_0 and l_e <= out_0 + self.float_tolerance:
-                        test_val = self.__solveLong(out_0, l_e, s_e, p, k)
-
-                        if abs(test_val - in_0) < self.float_tolerance:
-                            in_e = temp_in_e
-                            out_e = temp_out_e
-                            dist = lst[1]
-
-        return in_e, out_e
+        return lst[0][0][0], lst[0][0][1]
     
     def __getEquilibrium(self, short: str, long: str, k: float, p: float) -> Tuple[float, float]:
         """
