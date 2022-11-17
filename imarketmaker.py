@@ -6,7 +6,7 @@ from copy import deepcopy
 
 class MarketMakerInterface:
     def configure_simulation(self, reset_tx: str = "False", arb: str = "True",
-    arb_actions: int = 1, crash_type: List[str] = [], multi_token: str = "True"):
+    arb_actions: int = 1, multi_token: str = "True"):
         """
         Configures settings for traffic simulation
 
@@ -14,20 +14,28 @@ class MarketMakerInterface:
         1. reset_tx: whether or not the pool should be reset after every swap
         2. arb: whether or not arbitrage opportunities are acted on
         3. arb_actions: how many swaps can occur for one arbitrage opportunity
-        4. crash_type: if not empty, specifies the token type(s) that will never be
-        removed from the pool
-        5. multi_token: indicates if there are multi token pools
+        4. multi_token: indicates if there are multi token pools
         """
         self.reset_tx = reset_tx == "True"
         self.arb = arb == "True"
         self.arb_actions = arb_actions
-        self.crash_type = crash_type
         self.multi_token = multi_token == "True"
+    
+    def configure_crash_types(self, crash_type: List[str] = []):
+        """
+        Configures crashing price tokens
+
+        Parameters:
+        1. crash type: if not empty, specifies the token type(s) that will never be
+        removed from the pool
+        """
+        self.crash_type = crash_type
 
     def simulate_traffic(self,
                          traffic: List[List[InputTx]],
                          external_price: List[Dict[str, float]]
-    ) -> Tuple[List[List[OutputTx]], List[List[PoolStatusInterface]], PoolStatusInterface]:
+    ) -> Tuple[List[List[OutputTx]], List[List[PoolStatusInterface]],
+    PoolStatusInterface, List[str]]:
         """
         Given a traffic and price data, simulate swaps
 
@@ -81,7 +89,7 @@ class MarketMakerInterface:
             txs.append(batch_txs)
             stats.append(batch_stats)
 
-        return txs, stats, initial_copy
+        return txs, stats, initial_copy, self.crash_type
     
     def swap(self, tx: InputTx, out_amt: float, execute: bool = True
     ) -> Tuple[OutputTx, PoolStatusInterface]:
@@ -120,8 +128,8 @@ class MarketMakerInterface:
                     reverse_pool[1] += tx.inval
 
             return OutputTx(
-                input_token_type = tx.intype,
-                output_token_type = tx.outtype,
+                in_type = tx.intype,
+                out_type = tx.outtype,
                 inpool_init_val = in0,
                 outpool_init_val = out0,
                 inpool_after_val = in0 + tx.inval,
@@ -130,7 +138,7 @@ class MarketMakerInterface:
                 after_rate = 1
             ), deepcopy(self.token_info)
     
-    def calculate_equilibriums(self, intype: str, outtype: str) -> Tuple[float, float]:
+    def calculate_equilibriums(self, intype: str, outtype: str) -> Tuple[float, float, float]:
         """
         Calculates and returns equilibrium balances
 
@@ -141,6 +149,7 @@ class MarketMakerInterface:
         Returns:
         1. equilibrium balance for input token
         2. equilibrium balance for output token
+        3. k value, if it is relevant
         """
         raise NotImplementedError
     
@@ -187,7 +196,7 @@ class MarketMakerInterface:
                             info[0] = p
                             info[1] = rate_dict
 
-            if info[1]["rate"] > 0 and info[1]["in_amt"]> 0:
+            if info[1]["rate"] > 1 and info[1]["in_amt"] > 0:
                 output, token_info = self.swap(InputTx(info[0][0], info[0][1], \
                     info[1]["in_amt"]), info[1]["out_amt"])
                 outputtx_lst.append(output)
