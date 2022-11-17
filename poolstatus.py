@@ -4,14 +4,14 @@ class PoolStatusInterface:
     def __init__(self):
         raise NotImplementedError
 
-
 class MultiTokenPoolStatus(PoolStatusInterface, dict):
     def __init__(self, status: Dict[str, Tuple[float, float]]):
         """
-        Represents pool status for multi token liquidity pool market makers
+        Represents pool status for multi token liquidity pool market makers with
+        computable k
 
         Parameters:
-        1. status: dictionary indicating tokens' counts and k values
+        1. status: dictionary indicating tokens' counts and min k value
         """
         dict.__init__(self, status)
 
