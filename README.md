@@ -5,3 +5,6 @@ DODO exchange's proactive market maker generalizes the concepts of constant prod
 We compared MPMM's performance against PMM, constant product market makers, and constant sum market makers through simulations and found it performs orders of magnitude better than its counterparts in efficiency metrics due to tokens' liquidities being available across all trading pairs. Similarly, this increased liquidity also dampened the effects of impermanent loss significantly more than PMM.
 
 An issue worth further investigating are the effects of a token price crash on impermanent loss. This is especially a concern for the multi token setting since liquidity providers supplying any token would be effected. Simulations showed that MPMM performed well in impermanent loss, so we are hopeful the price crash scenario would not have outsized effects.
+
+results here:
+https://drive.google.com/drive/folders/1lVF7ZpfTh2vQi-zJ8_nl84kiJHpaa9eo?usp=sharing
