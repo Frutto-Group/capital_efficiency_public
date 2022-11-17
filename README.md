@@ -6,5 +6,10 @@ We compared MPMM's performance against PMM, constant product market makers, and 
 
 An issue worth further investigating are the effects of a token price crash on impermanent loss. This is especially a concern for the multi token setting since liquidity providers supplying any token would be effected. Simulations showed that MPMM performed well in impermanent loss, so we are hopeful the price crash scenario would not have outsized effects.
 
-results here:
+simulation results here:
 https://drive.google.com/drive/folders/1lVF7ZpfTh2vQi-zJ8_nl84kiJHpaa9eo?usp=sharing
+
+run simulation with command:
+```
+python simulator.py -d <folder for results>
+```
