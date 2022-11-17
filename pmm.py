@@ -72,10 +72,10 @@ class PMM(MarketMakerInterface):
         2. status of pool ater swap
         """
         pool = (tx.intype, tx.outtype)
-        k = self.token_info[pool][2]
         i_0 = self.token_info[pool][0]
         o_0 = self.token_info[pool][1]
         in_e, out_e = self.calculate_equilibriums(tx.intype, tx.outtype)
+        k = self.token_info[pool][2]
         
         if out_amt == None:
             d = tx.inval
