@@ -45,7 +45,7 @@ class MCSMM(MarketMakerInterface):
         if out_amt == None:
             if (tx.inval / p > self.token_info[tx.outtype][0]):
                 out_amt = 0
-                tx.input_token_value = 0
+                tx.inval = 0
             else:
                 out_amt = tx.inval / p
 
