@@ -44,7 +44,7 @@ class CSMM(MarketMakerInterface):
         if out_amt == None:
             if (tx.inval / p > self.token_info[(tx.intype, tx.outtype)][1]):
                 out_amt = 0
-                tx.input_token_value = 0
+                tx.inval = 0
             else:
                 out_amt = tx.inval / p
 
